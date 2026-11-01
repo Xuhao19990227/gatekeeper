@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GateKeeper · 高保真原型（前端实现参照物）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, "Microsoft YaHei", sans-serif; background: #e2e8f0; color: #1e293b; padding: 32px 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .doc-title { text-align: center; margin-bottom: 8px; font-size: 22px; }
+  .doc-sub { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 28px; }
+
+  /* 设计规范色板 */
+  .spec { background: #fff; border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 10px rgba(15,23,42,.08); margin-bottom: 36px; }
+  .spec h3 { font-size: 13px; color: #64748b; margin-bottom: 12px; letter-spacing: 1px; }
+  .swatches { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sw { flex: 1; min-width: 110px; border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 12px; }
+  .sw small { display: block; opacity: .85; font-size: 10px; margin-top: 2px; }
+  .sw-primary { background: #4f46e5; } .sw-success { background: #10b981; }
+  .sw-danger { background: #ef4444; } .sw-bg { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+  .sw-card { background: #ffffff; color: #475569; border: 1px solid #e2e8f0; }
+  .spec-note { margin-top: 10px; font-size: 12px; color: #94a3b8; }
+
+  .screen-label { display: inline-block; background: #1e293b; color: #fff; font-size: 12px; padding: 4px 14px; border-radius: 999px; margin-bottom: 10px; }
+  .screen { background: #f8fafc; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 30px rgba(15,23,42,.15); margin-bottom: 44px; border: 1px solid #cbd5e1; }
+
+  /* ===== 屏1 首页 ===== */
+  .home { padding: 36px 40px; }
+  .home-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+  .logo { font-size: 20px; font-weight: 700; }
+  .logo-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .user-chip { font-size: 12px; color: #475569; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 14px; }
+  .hero { text-align: center; background: #fff; border-radius: 16px; padding: 28px; box-shadow: 0 1px 4px rgba(15,23,42,.06); margin-bottom: 26px; }
+  .hero p { color: #475569; font-size: 14px; margin-bottom: 18px; }
+  .hero-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .input { border: 1px solid #cbd5e1; border-radius: 10px; padding: 9px 14px; font-size: 13px; width: 260px; color: #94a3b8; background: #fff; text-align: left; }
+  .btn { border-radius: 10px; padding: 9px 18px; font-size: 13px; font-weight: 500; }
+  .btn-primary { background: #4f46e5; color: #fff; }
+  .btn-ghost { background: #fff; color: #4f46e5; border: 1px solid #4f46e5; }
+  .sec-title { font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 12px; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pcard { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
+  .pcard b { font-size: 14px; }
+  .gates { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; margin: 10px 0 14px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot-on { background: #10b981; } .dot-off { background: #e2e8f0; }
+  .line { width: 18px; height: 2px; background: #e2e8f0; }
+  .pcard .ops { display: flex; gap: 8px; }
+  .mini-btn { font-size: 12px; border-radius: 8px; padding: 5px 12px; }
+  .mini-go { background: #eef2ff; color: #4f46e5; }
+  .mini-del { background: #f8fafc; color: #94a3b8; }
+  .pcard time { font-size: 11px; color: #94a3b8; margin-left: auto; }
+
+  /* ===== 屏2 工作台 ===== */
+  .ws-top { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .ws-back { font-size: 13px; color: #64748b; }
+  .ws-name { font-size: 14px; font-weight: 600; }
+  .steps { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .pill { font-size: 12px; padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
+  .pill-done { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+  .pill-active { background: #4f46e5; color: #fff; border: 1px solid #4f46e5; }
+  .pill-todo { background: #fff; color: #94a3b8; border: 1px solid #e2e8f0; }
+  .conn { color: #cbd5e1; font-size: 12px; }
+  .ws-body { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; padding: 16px 20px; }
+  .panel { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 1px 4px rgba(15,23,42,.06); margin-bottom: 14px; }
+  .panel h4 { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+  .ta { border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; font-size: 12px; color: #475569; padding: 10px 12px; line-height: 1.7; font-family: ui-monospace, Consolas, monospace; }
+  .ta-foot { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 8px; }
+  .ta-foot a { color: #4f46e5; text-decoration: none; }
+  .chat-row { display: flex; gap: 8px; }
+  .chat-input { flex: 1; border: 1px solid #cbd5e1; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #94a3b8; background: #fff; }
+  .btn-gen { background: #4f46e5; color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 13px; white-space: nowrap; }
+  .hint { font-size: 11px; color: #94a3b8; margin-top: 8px; }
+  .vlist { list-style: none; }
+  .vlist li { display: flex; gap: 8px; align-items: center; font-size: 12px; padding: 7px 8px; border-radius: 8px; color: #475569; }
+  .vlist li.cur { background: #eef2ff; color: #4338ca; }
+  .vlist .vid { font-family: ui-monospace, monospace; font-size: 11px; }
+  .vlist time { margin-left: auto; color: #94a3b8; font-size: 11px; }
+  .prev-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tbtn { font-size: 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 9px; padding: 7px 13px; color: #475569; }
+  .tbtn-pass { background: #10b981; border-color: #10b981; color: #fff; margin-left: auto; }
+  .preview { background: #fff; border-radius: 14px; box-shadow: 0 1px 4px rgba(15,23,42,.06); overflow: hidden; border: 1px solid #e2e8f0; }
+  .preview-bar { background: #f1f5f9; border-bottom: 1px solid #e2e8f0; padding: 8px 14px; font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+  .preview-bar .dots3 i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  .preview-body { padding: 22px 24px; }
+  .rpt-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .rpt-h b { font-size: 15px; }
+  .stars { color: #f59e0b; font-size: 13px; letter-spacing: 2px; }
+  .stars small { color: #94a3b8; letter-spacing: 0; margin-left: 6px; }
+  .rpt-sec { font-size: 12px; font-weight: 700; color: #4f46e5; margin: 14px 0 8px; }
+  table.rpt { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  table.rpt th { background: #f8fafc; text-align: left; padding: 7px 9px; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+  table.rpt td { padding: 7px 9px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+  .tag { font-size: 10px; border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+  .tag-bound { background: #fef3c7; color: #b45309; } .tag-exc { background: #fee2e2; color: #b91c1c; } .tag-acc { background: #dbeafe; color: #1d4ed8; }
+  .warnbox { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 12px; font-size: 11.5px; color: #92400e; line-height: 1.6; }
+  .verdict { display: flex; gap: 10px; margin-top: 16px; align-items: center; font-size: 12px; }
+  .radio-pass { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 999px; padding: 5px 13px; }
+  .radio-cond { background: #fff; color: #64748b; border: 1px solid #e2e8f0; border-radius: 999px; padding: 5px 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="doc-title">🛡 GateKeeper · 高保真原型</h1>
+  <p class="doc-sub">前端实现参照物 · 完整主流程：注册登录 → 首页 → 三道门禁 → 导出 · 与 app/ 下代码同源设计语言 · 2026-11-01 · 配套 docs/PRD.md 3.1/3.2/3.5 节</p>
+
+  <div class="spec">
+    <h3>设计规范 DESIGN TOKENS</h3>
+    <div class="swatches">
+      <div class="sw sw-primary">主色 Indigo 600<small>#4f46e5 · 按钮/选中/链接</small></div>
+      <div class="sw sw-success">成功 Emerald 500<small>#10b981 · 已过门/通过态</small></div>
+      <div class="sw sw-danger">危险 Red 500<small>#ef4444 · 错误/打回</small></div>
+      <div class="sw sw-bg">页面底 Slate 50<small>#f8fafc</small></div>
+      <div class="sw sw-card">卡片 White<small>#ffffff · 圆角 12-16px · 柔和阴影</small></div>
+    </div>
+    <p class="spec-note">字体：system-ui / Microsoft YaHei ｜ 正文 13-14px，辅助 11-12px ｜ 圆角：卡片 14-16px、按钮/输入 10px、状态胶囊 999px ｜ 间距基准 4px</p>
+  </div>
+
+  <div class="spec">
+    <h3>信息架构 · 从属关系（SCHEMA V2，2026-11-01 首轮用户验收反馈确立）</h3>
+    <pre style="font-size:12px;line-height:1.9;color:#475569;font-family:ui-monospace,Consolas,monospace;margin:0">账号 / 游客 ──1:N──▶ 质量项目
+                      ├─ 需求材料 ×3门（PRD / 测试点 / diff —— 从属项目，即输即存）
+                      ├─ 门禁产物 ×3门（每门锁定一个"过门版本"= 产物当前版）
+                      └─ 版本链（产物 1:N 版本，每版 = 一轮生成/迭代指令）</pre>
+    <p class="spec-note">P1-0 数据库化蓝图：projects 表（materials JSONB）+ versions 表；页面只经 lib/storage.ts 适配器读写，换库零改动</p>
+  </div>
+
+  <div class="spec">
+    <h3>完整主流程 MAP</h3>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px">
+      <span style="background:#eef2ff;color:#4338ca;border-radius:8px;padding:8px 12px">① 注册 / 登录<br><small style="color:#818cf8">屏 0 · 已实现（本地鉴权），P1-0 换服务端</small></span>
+      <span style="color:#cbd5e1">→</span>
+      <span style="background:#eef2ff;color:#4338ca;border-radius:8px;padding:8px 12px">② 首页 · 新建/示例项目<br><small style="color:#818cf8">屏 1</small></span>
+      <span style="color:#cbd5e1">→</span>
+      <span style="background:#eef2ff;color:#4338ca;border-radius:8px;padding:8px 12px">③ Gate1 需求评审<br><small style="color:#818cf8">屏 2</small></span>
+      <span style="color:#cbd5e1">→</span>
+      <span style="background:#eef2ff;color:#4338ca;border-radius:8px;padding:8px 12px">④ Gate2 用例左移<br><small style="color:#818cf8">屏 2 同形态</small></span>
+      <span style="color:#cbd5e1">→</span>
+      <span style="background:#eef2ff;color:#4338ca;border-radius:8px;padding:8px 12px">⑤ Gate3 提测准入<br><small style="color:#818cf8">屏 2 同形态</small></span>
+      <span style="color:#cbd5e1">→</span>
+      <span style="background:#ecfdf5;color:#059669;border-radius:8px;padding:8px 12px">⑥ 导出产物 / 汇总报告<br><small style="color:#6ee7b7">P1-1 汇总报告</small></span>
+    </div>
+    <p class="spec-note">每道门内部循环 = 材料 → 生成 → 预览 → 对话迭代 → 确认过门（屏 2）｜ 游客通道 = 跳过①直达②（零注册快速体验，数据仅存本机）｜ ①在 P1-0 前由昵称轻初始化兜底（PRD 3.1）</p>
+    <p class="spec-note" style="margin-top:6px">模块人物志（PRD 1.3b）：③需求质量→测试主导·产品自检 ｜ ④用例质量→测试主导·负责人评审 ｜ ⑤代码提测质量→测试判定·开发提供 diff ｜ 愿景扩展 G4-G6＝执行/发布/复盘质量（模块注册表=门禁角色包，加门不改旧门）</p>
+  </div>
+
+  <span class="screen-label">屏 0 · 注册 / 登录（PRD 3.5 · P1-0 随数据库落地为真实账号：密码哈希+会话+按账号隔离数据）</span>
+  <div class="screen">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:36px 40px">
+      <div style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 1px 4px rgba(15,23,42,.06);max-width:360px;margin:0 auto;width:100%">
+        <div style="text-align:center;font-size:34px">🛡</div>
+        <div style="text-align:center;font-weight:700;font-size:17px;margin:6px 0 2px">GateKeeper</div>
+        <div style="text-align:center;font-size:12px;color:#64748b;margin-bottom:18px">AI 质量门禁工作台 · 测试左移</div>
+        <div style="display:flex;background:#f1f5f9;border-radius:10px;padding:4px;margin-bottom:16px">
+          <span style="flex:1;text-align:center;font-size:13px;background:#fff;border-radius:8px;padding:7px 0;font-weight:600;color:#4f46e5;box-shadow:0 1px 2px rgba(15,23,42,.08)">登录</span>
+          <span style="flex:1;text-align:center;font-size:13px;color:#94a3b8;padding:7px 0">注册</span>
+        </div>
+        <div class="input" style="width:100%;margin-bottom:10px">用户名</div>
+        <div class="input" style="width:100%;margin-bottom:14px">密码 ••••••••</div>
+        <div class="btn btn-primary" style="display:block;text-align:center;margin-bottom:14px">进入工作台</div>
+        <div style="border-top:1px dashed #e2e8f0;padding-top:12px;text-align:center;font-size:12px;color:#4f46e5">👀 游客快速体验 →</div>
+        <div style="text-align:center;font-size:10px;color:#cbd5e1;margin-top:6px">免注册 · 数据仅存本机 · 最快上手通道</div>
+      </div>
+      <div style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 1px 4px rgba(15,23,42,.06);max-width:360px;margin:0 auto;width:100%">
+        <div style="text-align:center;font-size:34px">🛡</div>
+        <div style="text-align:center;font-weight:700;font-size:17px;margin:6px 0 2px">创建账号</div>
+        <div style="text-align:center;font-size:12px;color:#64748b;margin-bottom:18px">注册后项目与版本历史按账号云端隔离</div>
+        <div style="display:flex;background:#f1f5f9;border-radius:10px;padding:4px;margin-bottom:16px">
+          <span style="flex:1;text-align:center;font-size:13px;color:#94a3b8;padding:7px 0">登录</span>
+          <span style="flex:1;text-align:center;font-size:13px;background:#fff;border-radius:8px;padding:7px 0;font-weight:600;color:#4f46e5;box-shadow:0 1px 2px rgba(15,23,42,.08)">注册</span>
+        </div>
+        <div class="input" style="width:100%;margin-bottom:10px">用户名（登录凭证）</div>
+        <div class="input" style="width:100%;margin-bottom:10px">密码 ••••••••</div>
+        <div class="input" style="width:100%;margin-bottom:14px">确认密码 ••••••••</div>
+        <div class="btn btn-primary" style="display:block;text-align:center;margin-bottom:14px">创建账号并进入</div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 10px;font-size:10.5px;color:#92400e;line-height:1.6">⚠ 演示级声明（文档同步标注）：密码哈希存储+会话 cookie；生产化升级企业级鉴权（SSO/OAuth），见 PRD 扩展规划</div>
+      </div>
+    </div>
+  </div>
+
+  <span class="screen-label">屏 1 · 首页 —— 我的质量项目（PRD 3.1）</span>
+  <div class="screen">
+    <div class="home">
+      <div class="home-head">
+        <div><div class="logo">🛡 GateKeeper</div><div class="logo-sub">AI 质量门禁工作台</div></div>
+        <span class="user-chip">👤 评审员老王 ｜ 退出</span>
+      </div>
+      <div class="hero">
+        <p>测试左移 —— 从需求评审到提测准入，三道门禁的产物由 AI 现场生成</p>
+        <div class="hero-row">
+          <div class="input">质量项目名称，如：优惠券功能重构</div>
+          <span class="btn btn-primary">＋ 新建质量项目</span>
+          <span class="btn btn-ghost">📖 加载示例项目</span>
+        </div>
+      </div>
+      <div class="sec-title">我的项目</div>
+      <div class="cards">
+        <div class="pcard">
+          <b>优惠券功能重构</b>
+          <div class="gates">门禁 <i class="dot dot-on"></i><span class="line"></span><i class="dot dot-on"></i><span class="line"></span><i class="dot dot-off"></i> <span style="margin-left:4px">2/3</span><time>2026-11-01 10:24</time></div>
+          <div style="font-size:11px;color:#94a3b8;margin:-8px 0 12px">需求材料 2/3 门 · 产物版本 5 个</div>
+          <div class="ops"><span class="mini-btn mini-go">继续 →</span><span class="mini-btn mini-del">删除</span></div>
+        </div>
+        <div class="pcard">
+          <b>积分商城改版</b>
+          <div class="gates">门禁 <i class="dot dot-on"></i><span class="line"></span><i class="dot dot-off"></i><span class="line"></span><i class="dot dot-off"></i> <span style="margin-left:4px">1/3</span><time>2026-10-31 15:02</time></div>
+          <div style="font-size:11px;color:#94a3b8;margin:-8px 0 12px">需求材料 1/3 门 · 产物版本 2 个</div>
+          <div class="ops"><span class="mini-btn mini-go">继续 →</span><span class="mini-btn mini-del">删除</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="screen-label">屏 2 · 工作台 —— 左材料右预览 · Gate1 产物示例（PRD 3.2 / 3.4）</span>
+  <div class="screen">
+    <div class="ws-top">
+      <span class="ws-back">← 项目</span>
+      <span class="ws-name">优惠券功能重构</span>
+      <div class="steps">
+        <span class="pill pill-active">Gate 1 · 需求评审</span><span class="conn">─</span>
+        <span class="pill pill-todo">Gate 2 · 用例左移</span><span class="conn">─</span>
+        <span class="pill pill-todo">Gate 3 · 提测准入</span>
+      </div>
+    </div>
+    <div class="ws-body">
+      <div>
+        <div class="panel">
+          <h4>📄 材料面板 · 需求评审</h4>
+          <div class="ta">需求：优惠券领取功能<br>用户在活动页可以领取优惠券，页面交互见【图1：领券页原型图】。领券成功后在"我的优惠券"中可以看到。优惠券有使用门槛和有效期。活动很火爆，要保证用户体验，页面加载要快。每个用户都可以领取优惠券，领了就能用。如果出现问题联系运营同学处理。</div>
+          <div class="ta-foot"><span>118 / 4000 字</span><a href="#">加载示例 PRD</a></div>
+        </div>
+        <div class="panel">
+          <h4>💬 生成与迭代</h4>
+          <div class="chat-row"><div class="chat-input">迭代指令，如：补充安全类用例</div><span class="btn-gen">🚀 生成</span></div>
+          <div class="hint">当前门版本数：2 ｜ 生成实测约 1 分钟，超时 150s 自动熔断</div>
+        </div>
+        <div class="panel">
+          <h4>🕘 版本历史（延展能力①）· 点击回滚</h4>
+          <ul class="vlist">
+            <li class="cur"><span class="vid">v2</span><span>评审结论区块加勾选确认</span><time>10:31</time><span>←当前</span></li>
+            <li><span class="vid">v1</span><span>首次生成</span><time>10:26</time></li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="prev-toolbar">
+          <span class="tbtn">↻ 重新生成</span>
+          <span class="tbtn">⬇ 导出 HTML（延展能力②）</span>
+          <span class="tbtn tbtn-pass">✓ 确认过门 → Gate2</span>
+        </div>
+        <div class="preview">
+          <div class="preview-bar"><span class="dots3"><i style="background:#f87171"></i><i style="background:#fbbf24"></i><i style="background:#34d399"></i></span>产物预览 · iframe sandbox ·《需求质量评审报告》v2</div>
+          <div class="preview-body">
+            <div class="rpt-h">
+              <b>📋 需求质量评审报告 —— 优惠券领取功能</b>
+              <span class="stars">★★☆☆☆<small>可测性 2/5 · 需求颗粒度不足，建议补充后进入开发</small></span>
+            </div>
+            <div class="rpt-sec">② 模糊点清单</div>
+            <table class="rpt">
+              <tr><th style="width:32%">原文引用</th><th style="width:30%">问题</th><th>建议改写</th></tr>
+              <tr><td>"页面加载要快"</td><td>无量化标准，不可测</td><td>首屏加载 P95 ≤ 2s</td></tr>
+              <tr><td>"领了就能用"</td><td>未定义生效时机与门槛校验</td><td>领取成功后即时生效，下单时校验门槛</td></tr>
+            </table>
+            <div class="rpt-sec">③ 缺失项清单（节选）</div>
+            <table class="rpt">
+              <tr><th>缺失项</th><th style="width:18%">类别</th><th>建议补充</th></tr>
+              <tr><td>每人限领张数未定义</td><td><span class="tag tag-bound">边界</span></td><td>明确单用户领取上限与超限文案</td></tr>
+              <tr><td>库存不足/并发领取处理缺失</td><td><span class="tag tag-exc">异常流</span></td><td>库存扣减策略、失败提示、是否回滚</td></tr>
+              <tr><td>无验收标准</td><td><span class="tag tag-acc">验收</span></td><td>补充可判定的验收条件清单</td></tr>
+            </table>
+            <div class="rpt-sec">⑤ 无法评审项</div>
+            <div class="warnbox">⚠ 需求引用了【图1：领券页原型图】——AI 无法查看图片内容，交互细节（按钮位置/弹窗流程）请评审人对照原型图人工确认后补充结论。</div>
+            <div class="verdict">
+              <b style="font-size:12px">⑥ 评审结论：</b>
+              <span class="radio-cond">○ 通过</span><span class="radio-pass">● 有条件通过</span><span class="radio-cond">○ 打回</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:12px;color:#94a3b8;margin-bottom:8px">— 原型结束 · 实现以 app/ 代码 + docs/PRD.md 为准 —</p>
+</div>
+</body>
+</html>
